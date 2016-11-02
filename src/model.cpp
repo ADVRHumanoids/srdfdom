@@ -34,7 +34,7 @@
 
 /* Author Ioan Sucan */
 
-#include "srdfdom/model.h"
+#include <srdfdom_advr/model.h>
 #include <console_bridge/console.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -44,7 +44,7 @@
 #include <set>
 #include <limits>
 
-void srdf::Model::loadVirtualJoints(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadVirtualJoints(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* vj_xml = robot_xml->FirstChildElement("virtual_joint"); vj_xml; vj_xml = vj_xml->NextSiblingElement("virtual_joint"))
   {
@@ -92,7 +92,7 @@ void srdf::Model::loadVirtualJoints(const urdf::ModelInterface &urdf_model, TiXm
   }
 }
 
-void srdf::Model::loadGroups(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadGroups(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* group_xml = robot_xml->FirstChildElement("group"); group_xml; group_xml = group_xml->NextSiblingElement("group"))
   {
@@ -265,7 +265,7 @@ void srdf::Model::loadGroups(const urdf::ModelInterface &urdf_model, TiXmlElemen
   }
 }
 
-void srdf::Model::loadGroupStates(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadGroupStates(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* gstate_xml = robot_xml->FirstChildElement("group_state"); gstate_xml; gstate_xml = gstate_xml->NextSiblingElement("group_state"))
   {
@@ -352,7 +352,7 @@ void srdf::Model::loadGroupStates(const urdf::ModelInterface &urdf_model, TiXmlE
   }
 }
 
-void srdf::Model::loadEndEffectors(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadEndEffectors(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* eef_xml = robot_xml->FirstChildElement("end_effector"); eef_xml; eef_xml = eef_xml->NextSiblingElement("end_effector"))
   {
@@ -404,7 +404,7 @@ void srdf::Model::loadEndEffectors(const urdf::ModelInterface &urdf_model, TiXml
   }
 }
 
-void srdf::Model::loadLinkSphereApproximations(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadLinkSphereApproximations(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* cslink_xml = robot_xml->FirstChildElement("link_sphere_approximation"); cslink_xml; cslink_xml = cslink_xml->NextSiblingElement("link_sphere_approximation"))
   {
@@ -491,7 +491,7 @@ void srdf::Model::loadLinkSphereApproximations(const urdf::ModelInterface &urdf_
   }
 }
 
-void srdf::Model::loadDisabledCollisions(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadDisabledCollisions(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   for (TiXmlElement* c_xml = robot_xml->FirstChildElement("disable_collisions"); c_xml; c_xml = c_xml->NextSiblingElement("disable_collisions"))
   {
@@ -507,12 +507,12 @@ void srdf::Model::loadDisabledCollisions(const urdf::ModelInterface &urdf_model,
     dc.link2_ = boost::trim_copy(std::string(link2));
     if (!urdf_model.getLink(dc.link1_))
     {
-      logError("Link '%s' is not known to URDF. Cannot disable collisons.", link1);
+      logWarn("Link '%s' is not known to URDF. Cannot disable collisons.", link1);
       continue;
     }
     if (!urdf_model.getLink(dc.link2_))
     {
-      logError("Link '%s' is not known to URDF. Cannot disable collisons.", link2);
+      logWarn("Link '%s' is not known to URDF. Cannot disable collisons.", link2);
       continue;
     }
     const char *reason = c_xml->Attribute("reason");
@@ -522,7 +522,7 @@ void srdf::Model::loadDisabledCollisions(const urdf::ModelInterface &urdf_model,
   }
 }
 
-void srdf::Model::loadPassiveJoints(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadPassiveJoints(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {  
   for (TiXmlElement* c_xml = robot_xml->FirstChildElement("passive_joint"); c_xml; c_xml = c_xml->NextSiblingElement("passive_joint"))
   {
@@ -550,7 +550,25 @@ void srdf::Model::loadPassiveJoints(const urdf::ModelInterface &urdf_model, TiXm
   }
 }
 
-bool srdf::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
+void srdf_advr::Model::loadDisabledJoints(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml) 
+{
+    
+    for (TiXmlElement* c_xml = robot_xml->FirstChildElement("disabled_joint"); c_xml; c_xml = c_xml->NextSiblingElement("disabled_joint"))
+    {
+        const char *name = c_xml->Attribute("name");
+        if (!name)
+        {
+            logError("No name specified for disabled joint. Ignoring.");
+            continue;
+        }
+        DisabledJoint dj;
+        dj.name_ = boost::trim_copy(std::string(name));
+
+        disabled_joints_.push_back(dj);
+    }
+}
+
+bool srdf_advr::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlElement *robot_xml)
 {
   clear();
   if (!robot_xml || robot_xml->ValueStr() != "robot")
@@ -577,11 +595,12 @@ bool srdf::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlElement *
   loadLinkSphereApproximations(urdf_model, robot_xml);
   loadDisabledCollisions(urdf_model, robot_xml);
   loadPassiveJoints(urdf_model, robot_xml);
+  loadDisabledJoints(urdf_model, robot_xml);
   
   return true;
 }
 
-bool srdf::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlDocument *xml)
+bool srdf_advr::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlDocument *xml)
 {
   TiXmlElement *robot_xml = xml ? xml->FirstChildElement("robot") : NULL;
   if (!robot_xml)
@@ -593,7 +612,7 @@ bool srdf::Model::initXml(const urdf::ModelInterface &urdf_model, TiXmlDocument 
 }
 
 
-bool srdf::Model::initFile(const urdf::ModelInterface &urdf_model, const std::string& filename)
+bool srdf_advr::Model::initFile(const urdf::ModelInterface &urdf_model, const std::string& filename)
 {
   // get the entire file
   std::string xml_string;
@@ -616,7 +635,7 @@ bool srdf::Model::initFile(const urdf::ModelInterface &urdf_model, const std::st
   }
 }
 
-bool srdf::Model::initString(const urdf::ModelInterface &urdf_model, const std::string& xmlstring)
+bool srdf_advr::Model::initString(const urdf::ModelInterface &urdf_model, const std::string& xmlstring)
 {
   TiXmlDocument xml_doc;
   xml_doc.Parse(xmlstring.c_str());
@@ -624,7 +643,7 @@ bool srdf::Model::initString(const urdf::ModelInterface &urdf_model, const std::
 }
 
 
-void srdf::Model::clear()
+void srdf_advr::Model::clear()
 {
   name_ = "";
   groups_.clear();
@@ -634,9 +653,10 @@ void srdf::Model::clear()
   link_sphere_approximations_.clear();
   disabled_collisions_.clear();
   passive_joints_.clear();
+  disabled_joints_.clear();
 }
 
-std::vector<std::pair<std::string, std::string> > srdf::Model::getDisabledCollisions() const
+std::vector<std::pair<std::string, std::string> > srdf_advr::Model::getDisabledCollisions() const
 {
   std::vector<std::pair<std::string, std::string> > result;
   for (std::size_t i = 0 ; i < disabled_collisions_.size() ; ++i)

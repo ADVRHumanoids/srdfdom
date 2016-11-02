@@ -17,7 +17,7 @@ catkin_package(
   DEPENDS rosconsole_bridge urdf
 )
 
-add_library(${PROJECT_NAME} src/model.cpp)
+add_library(${PROJECT_NAME} SHARED src/model.cpp)
 target_link_libraries(${PROJECT_NAME} ${TinyXML_LIBRARIES} ${catkin_LIBRARIES})
 
 install(TARGETS ${PROJECT_NAME}
@@ -27,3 +27,11 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
 )
+
+#######################
+# Add Testing target  #
+#######################
+if(SRDFDOM_COMPILE_TESTS)
+  enable_testing()
+  add_subdirectory(test)
+endif()
