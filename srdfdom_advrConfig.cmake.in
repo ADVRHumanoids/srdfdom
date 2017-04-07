@@ -1,0 +1,14 @@
+set(srdfdom_advr_VERSION @srdfdom_advr_VERSION@)
+
+@PACKAGE_INIT@
+
+set_and_check(srdfdom_advr_INCLUDEDIR "@PACKAGE_srdfdom_advr_INCLUDEDIR@")
+find_package(catkin COMPONENTS srdfdom)
+
+if(NOT TARGET srdfdom_advr::srdfdom_advr)
+  include("${CMAKE_CURRENT_LIST_DIR}/srdfdom_advrTargets.cmake")
+endif()
+
+# Compatibility
+set(srdfdom_advr_LIBRARIES srdfdom_advr::srdfdom_advr)
+set(srdfdom_advr_INCLUDE_DIRS ${srdfdom_advr_INCLUDEDIR})
