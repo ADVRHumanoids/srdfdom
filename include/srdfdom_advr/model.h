@@ -49,6 +49,10 @@ namespace urdf
 {
 typedef boost::shared_ptr<const ::urdf::Link> LinkConstSharedPtr;
 typedef boost::shared_ptr<const ::urdf::Joint> JointConstSharedPtr;
+
+typedef boost::shared_ptr<urdf::Link> LinkSharedPtr;
+typedef boost::shared_ptr<urdf::Joint> JointSharedPtr;
+
 }
 
 /// Main namespace
